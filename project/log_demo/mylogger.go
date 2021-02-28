@@ -1,87 +1,147 @@
 package mylogger
 
 import (
+	"errors"
 	"fmt"
+	"os"
+	"path"
+	"runtime"
+	"strings"
 	"time"
 )
 
-// 往终端写日志
-//type LogLevel uint16
-//
-//const (
-//	UNKNOWN LogLevel = iota
-//	DEBUG
-//	INFO
-//	WARNING
-//	ERROR
-//	FALAT
-//)
-//// Logger 日志结构
-//type Logger struct {
-//	Level LogLevel
-//}
-//
-//func parseLogLevel(s string) (LogLevel, error) {
-//	s = strings.ToLower(s)
-//	switch s {
-//	case "debug":
-//		return DEBUG,nil
-//	case "info":
-//		return INFO,nil
-//	case "warning":
-//		return WARNING,nil
-//	case "error":
-//		return ERROR,nil
-//	case "falat":
-//		return FALAT,nil
-//	default:
-//		err := errors.New("无效的日志级别")
-//		return UNKNOWN,err
-//	}
-//}
+type Logger interface {
+	Debug(format string, a ...interface{})
+	Info(format string, a ...interface{})
+	Warning(format string, a ...interface{})
+	Error(format string, a ...interface{})
+	Fatal(format string, a ...interface{})
+}
+
+const (
+	UNKNOWN LogLevel = iota
+	DEBUG
+	INFO
+	WARNING
+	ERROR
+	FATAL
+)
+
+func parseLogLevel(s string) (LogLevel, error) {
+	s = strings.ToLower(s)
+	switch s {
+	case "debug":
+		return DEBUG, nil
+	case "info":
+		return INFO, nil
+	case "warning":
+		return WARNING, nil
+	case "error":
+		return ERROR, nil
+	case "falat":
+		return FATAL, nil
+	default:
+		err := errors.New("无效的日志级别")
+		return UNKNOWN, err
+	}
+}
+
+func GetLogSrting(lv LogLevel) string {
+	switch lv {
+	case DEBUG:
+		return "DEBUG"
+	case INFO:
+		return "INTO"
+	case WARNING:
+		return "WARNING"
+	case ERROR:
+		return "ERROR"
+	case FATAL:
+		return "FATAL"
+	}
+	return "DEBUG"
+}
+func getInfo(skip int) (funcName, fileName string, lineNo int) {
+	pc, file, lineNo, ok := runtime.Caller(skip)
+	if !ok {
+		fmt.Print("runtime,Caller() failed\n")
+		return
+	}
+	funcName = runtime.FuncForPC(pc).Name()
+	fileName = path.Base(file)
+	funcName = strings.Split(funcName, ".")[1]
+	return funcName, fileName, lineNo
+}
+
 // NewLog
-func Newlog(levelStr string) Logger {
+func Newlog(levelStr string) ConcoleLogger {
 	level, err := parseLogLevel(levelStr)
 	if err != nil {
 		panic(err)
 	}
-	return Logger{
+	return ConcoleLogger{
 		Level: level,
 	}
 }
-
-func log(lv LogLevel, msg string) {
-	funcName, fileName, lineNo := getInfo(2)
-	now := time.Now()
-	//now.Format("2006-01-02 15:04:05")
-	fmt.Printf("[%s] [%s] [%s:%s:%d] %s\n", now.Format("2006-01-02 15:04:05"), GetLogSrting(lv), funcName, fileName, lineNo, msg)
-}
-func (l Logger) enable(logger LogLevel) bool {
-	return l.Level <= logger
+func (f *FileLogger) enable(logger LogLevel) bool {
+	return f.Level <= logger
 }
 
-func (l Logger) Debug(msg string) {
-	if l.enable(DEBUG) {
-		log(DEBUG, msg)
+func (f *FileLogger) checkSize(file *os.File) bool {
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Printf("get file info failed, err$v\n", err)
+		return false
 	}
+	// 如果当前文件的大小,大于等于日志文件的值，就应该返回True
+	return fileInfo.Size() > f.maxFileSize
 }
-func (l Logger) Info(msg string) {
-	if l.enable(INFO) {
-		log(INFO, msg)
+
+func (f *FileLogger) splitFile(file *os.File) (*os.File, error) {
+	//f.fileObj.Close()
+	// 备份日志
+	nowSrt := time.Now().Format("20060102150405")
+	fileInfo, err := file.Stat()
+	if err != nil {
+		fmt.Printf("get file info failed,err:%s\n", err)
+		return nil, err
 	}
-}
-func (l Logger) Warning(msg string) {
-	if l.enable(WARNING) {
-		log(WARNING, msg)
+	logName := path.Join(f.filePath, fileInfo.Name())
+	NewLogName := fmt.Sprintf("%s%s-%s.log", f.filePath, f.fileName, nowSrt)
+	file.Close()
+	os.Rename(logName, NewLogName)
+	fileObj, err := os.OpenFile(logName, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0644)
+	if err != nil {
+		fmt.Printf("open new log file failed, err!%v\n", err)
+		return nil, err
 	}
+	return fileObj, nil
 }
-func (l Logger) Error(msg string) {
-	if l.enable(ERROR) {
-		log(ERROR, msg)
-	}
-}
-func (l Logger) Fatal(msg string) {
-	if l.enable(FATAL) {
-		log(FATAL, msg)
+func (f *FileLogger) log(lv LogLevel, format string, a ...interface{}) {
+	if f.enable(lv) {
+		msg := fmt.Sprintf(format, a...)
+		funcName, fileName, lineNo := getInfo(2)
+		if f.checkSize(f.fileObj) {
+			//	切割文件
+			// 关闭日志文件
+			newFile, err := f.splitFile(f.fileObj)
+			if err != nil {
+				return
+			}
+			f.fileObj = newFile
+		}
+		now := time.Now()
+		//now.Format("2006-01-02 15:04:05")
+		fmt.Fprintf(f.fileObj, "[%s] [%s] [%s:%s:%d] %s\n", now.Format("2006-01-02 15:04:05"), GetLogSrting(lv), funcName, fileName, lineNo, msg)
+		if lv > ERROR {
+			if f.checkSize(f.fileObjErr) {
+				newFileErr, err := f.splitFile(f.fileObjErr)
+				if err != nil {
+					return
+				}
+				f.fileObj = newFileErr
+			}
+			fmt.Fprintf(f.fileObjErr, "[%s] [%s] [%s:%s:%d] %s\n", now.Format("2006-01-02 15:04:05"), GetLogSrting(lv), funcName, fileName, lineNo, msg)
+		}
 	}
 }

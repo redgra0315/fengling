@@ -1,34 +1,24 @@
 package main
 
 import (
-	//console "github.com/fengling/project/log_demo/project/log_demo"
-	//"github.com/fengling/project/log_demo/project/log_demo"
 	"github.com/fengling/project/log_demo/project/log_demo"
 	"time"
 )
 
+// 声明一个全局的接口变量
+var log mylogger.Logger
+
 // 测试自己写的日之苦
 func main() {
-	log := mylogger.Newlog("info")
-	for {
+	log = mylogger.NewFileLogger("debug", "./", "logged", 10*1024)
 
+	for {
+		//id := 10000
+		id1 := 10001
+		name := "陕西"
 		log.Debug("这是Debug日志")
-		log.Info("这是Info日志")
-		log.Error("你错了")
+		log.Info("这是Info日志,id1: %d", id1)
+		log.Error("你错了 addr:%v", name)
 		time.Sleep(time.Second)
 	}
 }
-
-//import (
-//	"net/http"
-//
-//	"github.com/labstack/echo"
-//)
-//
-//func main() {
-//	e := echo.New()
-//	e.GET("/", func(c echo.Context) error {
-//		return c.String(http.StatusOK, "Hello, World!")
-//	})
-//	e.Logger.Fatal(e.Start(":1323"))
-//}

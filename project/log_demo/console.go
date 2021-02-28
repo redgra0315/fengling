@@ -1,72 +1,57 @@
 package mylogger
 
 import (
-	"errors"
 	"fmt"
-	"path"
-	"runtime"
-	"strings"
+	"time"
 )
 
 type LogLevel uint16
 
-const (
-	UNKNOWN LogLevel = iota
-	DEBUG
-	INFO
-	WARNING
-	ERROR
-	FATAL
-)
-
 // Logger 日志结构
-type Logger struct {
+type ConcoleLogger struct {
 	Level LogLevel
 }
 
-func parseLogLevel(s string) (LogLevel, error) {
-	s = strings.ToLower(s)
-	switch s {
-	case "debug":
-		return DEBUG, nil
-	case "info":
-		return INFO, nil
-	case "warning":
-		return WARNING, nil
-	case "error":
-		return ERROR, nil
-	case "falat":
-		return FATAL, nil
-	default:
-		err := errors.New("无效的日志级别")
-		return UNKNOWN, err
+func NewConsoleLogger(levelStr string) ConcoleLogger {
+	level, err := parseLogLevel(levelStr)
+	if err != nil {
+		panic(err)
+	}
+	return ConcoleLogger{
+		Level: level,
 	}
 }
-
-func getInfo(skip int) (funcName, fileName string, lineNo int) {
-	pc, file, lineNo, ok := runtime.Caller(skip)
-	if !ok {
-		fmt.Print("runtime,Caller() failed\n")
-		return
-	}
-	funcName = runtime.FuncForPC(pc).Name()
-	fileName = path.Base(file)
-	funcName = strings.Split(funcName, ".")[1]
-	return funcName, fileName, lineNo
+func (c *ConcoleLogger) enable(logger LogLevel) bool {
+	return c.Level <= logger
 }
 
-func GetLogSrting(lv LogLevel) string {
-	switch lv {
-	case DEBUG:
-		return "DEBUG"
-	case INFO:
-		return "INTO"
-	case WARNING:
-		return "WARNING"
-	case ERROR:
-		return "ERROR"
-	case FATAL:
-		return "FATAL"
+func (c *ConcoleLogger) log(lv LogLevel, format string, a ...interface{}) {
+	if c.enable(lv) {
+		msg := fmt.Sprintf(format, a...)
+		funcName, fileName, lineNo := getInfo(3)
+
+		now := time.Now()
+		//now.Format("2006-01-02 15:04:05")
+		fmt.Printf("[%s] [%s] [%s:%s:%d] %s\n", now.Format("2006-01-02 15:04:05"), GetLogSrting(lv), funcName, fileName, lineNo, msg)
+
 	}
-	return "DEBUG"
+}
+func (c *ConcoleLogger) Debug(format string, a ...interface{}) {
+	c.log(DEBUG, format, a...)
+}
+
+func (c *ConcoleLogger) Info(format string, a ...interface{}) {
+	c.log(INFO, format, a...)
+}
+
+func (c *ConcoleLogger) Warning(format string, a ...interface{}) {
+	c.log(WARNING, format, a...)
+}
+
+func (c *ConcoleLogger) Error(format string, a ...interface{}) {
+	c.log(ERROR, format, a...)
+}
+
+func (c *ConcoleLogger) Fatal(format string, a ...interface{}) {
+	c.log(FATAL, format, a...)
 }
