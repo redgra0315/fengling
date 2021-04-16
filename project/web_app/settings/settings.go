@@ -52,7 +52,7 @@ type RedisConfig struct {
 func Init() (err error) {
 	//viper.SetConfigFile("config")                                                // 指定配置文件
 	//viper.SetConfigType("yaml")                                                  // 指定配置文件类型
-	viper.SetConfigFile("/data/golang/src/github.com/fengling/project/web_app/config.yaml") // 指定查找配置文件的路径
+	viper.SetConfigFile("project/web_app/config.yaml") // 指定查找配置文件的路径
 	// 读取配置信息
 	err = viper.ReadInConfig() // 读取配置信息
 	if err != nil {

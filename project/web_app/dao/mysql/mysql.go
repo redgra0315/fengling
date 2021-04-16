@@ -1,8 +1,8 @@
 package mysql
 
 import (
+	"fengling/project/web_app/settings"
 	"fmt"
-	"github.com/fengling/project/log_demo/project/web_app/settings"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"

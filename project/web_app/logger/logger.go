@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"github.com/fengling/project/log_demo/project/web_app/settings"
+	"fengling/project/web_app/settings"
 	"github.com/gin-gonic/gin"
 	"github.com/natefinch/lumberjack"
 	"github.com/spf13/viper"
@@ -38,8 +38,9 @@ func Init(cfg *settings.LogConfig) (err error) {
 }
 
 func getEncoder() zapcore.Encoder {
-	encoderConfig := zap.NewProductionEncoderConfig()
-	encoderConfig.EncodeTime = zapcore.ISO8601TimeEncoder
+	encoderConfig := zap.NewDevelopmentEncoderConfig()
+	// 自定义时间的格式
+	encoderConfig.EncodeTime = zapcore.TimeEncoderOfLayout("2006/01/02 15:04:05")
 	encoderConfig.TimeKey = "time"
 	encoderConfig.EncodeLevel = zapcore.CapitalLevelEncoder
 	encoderConfig.EncodeDuration = zapcore.SecondsDurationEncoder

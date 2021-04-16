@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"github.com/fengling/project/log_demo/project/web_app/logger"
-	"github.com/fengling/project/log_demo/project/web_app/settings"
+	"fengling/project/web_app/logger"
+	"fengling/project/web_app/settings"
 	"github.com/gin-gonic/gin"
 	"github.com/spf13/viper"
 	"net/http"

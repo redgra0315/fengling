@@ -1,8 +1,9 @@
 package redis
 
 import (
+	"fengling/project/web_app/settings"
 	"fmt"
-	"github.com/fengling/project/log_demo/project/web_app/settings"
+
 	"github.com/go-redis/redis"
 )
 

@@ -2,12 +2,13 @@ package main
 
 import (
 	"context"
+	"fengling/project/web_app/dao/mysql"
+	"fengling/project/web_app/dao/redis"
+	"fengling/project/web_app/logger"
+	"fengling/project/web_app/routes"
+	"fengling/project/web_app/settings"
 	"fmt"
-	"github.com/fengling/project/log_demo/project/web_app/dao/mysql"
-	"github.com/fengling/project/log_demo/project/web_app/dao/redis"
-	"github.com/fengling/project/log_demo/project/web_app/logger"
-	"github.com/fengling/project/log_demo/project/web_app/routes"
-	"github.com/fengling/project/log_demo/project/web_app/settings"
+
 	"github.com/spf13/viper"
 	"go.uber.org/zap"
 	"log"
